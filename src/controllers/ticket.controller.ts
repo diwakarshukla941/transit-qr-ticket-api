@@ -3,11 +3,11 @@ import { stations } from "../utils/stations";
 import { fareModel } from "../models/Fare";
 import QRCode from "qrcode";
 import { ticketModel } from "../models/Ticket";
+import { log } from "console";
 
 export const generateTicket = async (req: Request, res: Response) => {
   try {
     const { source, destination, journeyType } = req.body;
-
 
     const sourceStation = stations.find((s) => s.name === source);
     if (!sourceStation) {
@@ -65,6 +65,115 @@ export const generateTicket = async (req: Request, res: Response) => {
       ticket: newTicket,
     });
   } catch (error: any) {
-    return res.status(500).json({ msg: "Error generating ticket", error: error.message });
+    return res
+      .status(500)
+      .json({ msg: "Error generating ticket", error: error.message });
   }
 };
+
+export const checkInTicket = async (req: Request, res: Response) => {
+  try {
+    const { ticketId, station } = req.body;
+
+    const stationData = stations.find((s) => s.name === station);
+    if (!stationData) {
+      return res.status(400).json({ msg: `${station} is invalid!` });
+    }
+
+    const ticket = await ticketModel.findOne({ ticketId });
+
+    if (!ticket) {
+      return res.status(404).json({ msg: `${ticketId} is invalid` });
+    }
+
+    if (new Date() > ticket.expiry) {
+      ticket.status = "expired";
+      await ticket.save();
+      return res.status(400).json({ msg: `Ticket Expired!` });
+    }
+
+    if (ticket.status !== "generated") {
+      return res.status(400).json({ msg: `ticket already ${ticket.status}` });
+    }
+
+    if (ticket.source !== station) {
+      return res.status(400).json({
+        msg: `The check-in is only allowed at source station: ${ticket.source}`,
+      });
+    }
+
+    ticket.status = "in_use";
+    ticket.checkInStation = station;
+    ticket.checkInTime = new Date();
+    await ticket.save();
+
+    return res.status(200).json({
+      msg: "Checked-in successful",
+      ticket,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      msg: `check-in failed`,
+      err: error.message,
+    });
+  }
+};
+
+export const checkOutTicket = async (req: Request, res: Response) => {
+  try {
+    const { ticketId, station } = req.body;
+    const stationData = stations.find((s) => s.name === station);
+    if (!stationData) {
+      return res.status(400).json({ msg: `${station} is invalid!` });
+    }
+
+    const ticket = await ticketModel.findOne({ ticketId });
+    if (!ticket) {
+      return res.status(404).json({
+        msg: `${ticketId} is invalid`,
+      });
+    }
+
+    const currentTime = new Date();
+
+    if (currentTime > ticket.expiry) {
+      ticket.status = "expired";
+      await ticket.save();
+      return res.status(400).json({
+        msg: `ticket is Expired`,
+      });
+    }
+
+    if (ticket.status != "in_use") {
+      return res
+        .status(400)
+        .json({ msg: `Ticket is already: ${ticket.status}` });
+    }
+
+    if (ticket.destination !== station) {
+      return res
+        .status(400)
+        .json({
+          msg: `The checkout is only Allowed at destination station: ${ticket.destination} `,
+        });
+    }
+
+    ticket.status = "completed";
+    ticket.checkOutStation = station;
+    ticket.checkOutTime = new Date();
+
+    await ticket.save();
+
+    return res.status(200).json({
+      msg: `Checked-out successfully`,
+      ticket,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      msg: `Check-out failed`,
+      error:(error as Error).message,
+    });
+  }
+};
+
+
