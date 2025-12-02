@@ -151,11 +151,9 @@ export const checkOutTicket = async (req: Request, res: Response) => {
     }
 
     if (ticket.destination !== station) {
-      return res
-        .status(400)
-        .json({
-          msg: `The checkout is only Allowed at destination station: ${ticket.destination} `,
-        });
+      return res.status(400).json({
+        msg: `The checkout is only Allowed at destination station: ${ticket.destination} `,
+      });
     }
 
     ticket.status = "completed";
@@ -171,9 +169,58 @@ export const checkOutTicket = async (req: Request, res: Response) => {
   } catch (error) {
     return res.status(500).json({
       msg: `Check-out failed`,
-      error:(error as Error).message,
+      error: (error as Error).message,
     });
   }
 };
 
+export const getTicketDetails = async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
+  const ticket = await ticketModel.findOne({ ticketId });
+  if (ticket) {
+    return res.status(200).json({
+      msg: "Ticket Fetched Successfully",
+      ticket,
+    });
+  } else {
+    return res.status(404).json({
+      msg: `Sorry can't find the Ticket with respect to the Given TicketId: ${ticketId}`,
+    });
+  }
+};
 
+export const validateTicket = async (req: Request, res: Response) => {
+  const { ticketId } = req.body;
+  if (!ticketId) {
+    return res.status(400).json({
+      msg: "TicketId is Mandatory!",
+    });
+  }
+  const ticket = await ticketModel.findOne({ ticketId });
+  if (!ticket) {
+    return res.status(404).json({
+      msg: `Ticket not found with the respective ticketId : ${ticketId}`,
+    });
+  }
+  const currentDate = new Date();
+
+  if (currentDate > ticket.expiry) {
+    ticket.status = "expired";
+    await ticket.save();
+    return res.status(410).json({
+      msg:`Ticket with the ticketId ${ticketId} is expired!`
+    })
+  }
+  if(ticket.status === "generated" || ticket.status === "in_use"){
+    return res.status(200).json({
+      msg:"Ticket is valid!",
+      ticket
+    })
+  }else{
+    return res.status(410).json({
+      msg:"Ticket is invalid!"
+    })
+  }
+
+
+};

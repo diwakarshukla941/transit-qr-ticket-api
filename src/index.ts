@@ -4,6 +4,7 @@ import ticketRoutes from "./routes/ticket.routes";
 import fareRoutes from "./routes/fare.routes";
 import errorHandler from "./middlewares/errorHandler";
 import { dbConnect } from "./config/db";
+import "./cron/ticketExpiryCron";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
