@@ -3,11 +3,13 @@ import { checkInTicket, checkOutTicket, generateTicket, getTicketDetails, valida
 
 const router = express.Router();
 
-router.post('/generate',generateTicket  );
-router.get('/details/:ticketId', getTicketDetails);
-router.post('/validate',validateTicket);
+router.post('/generate', generateTicket);
+router.post('/validate', validateTicket);
 router.post('/checkin', checkInTicket);
 router.post('/checkout', checkOutTicket);
-router.get('/:ticketId', getTicketDetails);
+
+router.get('/details/:ticketId', getTicketDetails); // specific routes first
+router.get('/:ticketId', getTicketDetails);         // optional, general route last
+
 
 export default router;

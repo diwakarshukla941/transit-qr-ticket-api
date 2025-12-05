@@ -5,10 +5,10 @@ import { Request, Response } from "express";
 export const setFare = async (req: Request, res: Response) => {
   const { source, destination, price } = req.body;
   if (!source && !destination) {
-    res.send(`The source and destination is Required!!`);
+    return res.send(`The source and destination is Required!!`);
   } else {
     if (source === destination) {
-      res.send(`The source and destination cannot be same!!`);
+      return res.send(`The source and destination cannot be same!!`);
     }
   }
   const sourceStation = stations.find((station) => station.name === source);

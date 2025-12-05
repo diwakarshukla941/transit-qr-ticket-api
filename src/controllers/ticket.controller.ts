@@ -37,7 +37,7 @@ export const generateTicket = async (req: Request, res: Response) => {
     const expiry = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate() + 1,
+      now.getDate(),
       23,
       59,
       59
