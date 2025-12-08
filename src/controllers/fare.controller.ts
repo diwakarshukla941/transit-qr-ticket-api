@@ -1,8 +1,9 @@
 import { fareModel } from "../models/Fare";
 import { stations } from "../utils/stations";
 import { Request, Response } from "express";
+import { setFareDTO } from "../types/fare";
 
-export const setFare = async (req: Request, res: Response) => {
+export const setFare = async (req: Request<{},{},setFareDTO>, res: Response) => {
   const { source, destination, price } = req.body;
   if (!source && !destination) {
     return res.send(`The source and destination is Required!!`);
@@ -11,12 +12,12 @@ export const setFare = async (req: Request, res: Response) => {
       return res.send(`The source and destination cannot be same!!`);
     }
   }
-  const sourceStation = stations.find((station) => station.name === source);
+  const sourceStation = stations.find((s) => s.name.toLowerCase() === source.toLowerCase());
   if (!sourceStation) {
     return res.status(400).send(`Invalid source station: ${source}`);
   }
   const destinationStation = stations.find(
-    (station) => station.name === destination
+    (station) => station.name.toLowerCase() === destination.toLowerCase()
   );
   if (!destinationStation) {
     return res.status(400).send(`Invalid destination station: ${destination}`);
@@ -36,8 +37,8 @@ export const setFare = async (req: Request, res: Response) => {
     await exists.save(); // save the updated fare
   } else {
     newFare = await fareModel.create({
-      source,
-      destination,
+      source:sourceStation.name,
+      destination:destinationStation.name,
       sourceId,
       destinationId,
       price,
@@ -50,7 +51,7 @@ export const setFare = async (req: Request, res: Response) => {
   });
 };
 
-export const listFare = async (req:Request, res:Response) => {
+export const listFare = async (_req:Request, res:Response) => {
     const fareList = await fareModel.find();
     return res.status(200).json({
         msg:"This is the fare List of the source Stations and Destination Stations",
